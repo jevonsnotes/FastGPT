@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { ImportDataComponentProps } from '@/web/core/dataset/type.d';
 
 import dynamic from 'next/dynamic';
@@ -7,7 +7,7 @@ import { useTranslation } from 'next-i18next';
 import { useForm } from 'react-hook-form';
 import { Box, Button, Flex, Input, Textarea } from '@chakra-ui/react';
 import { getNanoid } from '@fastgpt/global/common/string/tools';
-import Loading from '@/components/Loading';
+import Loading from '@fastgpt/web/components/common/MyLoading';
 
 const DataProcess = dynamic(() => import('../commonProgress/DataProcess'), {
   loading: () => <Loading fixed={false} />
@@ -19,7 +19,7 @@ const CustomTet = ({ activeStep, goToNext }: ImportDataComponentProps) => {
     <>
       {activeStep === 0 && <CustomTextInput goToNext={goToNext} />}
       {activeStep === 1 && <DataProcess showPreviewChunks goToNext={goToNext} />}
-      {activeStep === 2 && <Upload showPreviewChunks />}
+      {activeStep === 2 && <Upload />}
     </>
   );
 };
@@ -35,6 +35,24 @@ const CustomTextInput = ({ goToNext }: { goToNext: () => void }) => {
       value: ''
     }
   });
+
+  const onSubmit = useCallback(
+    (data: { name: string; value: string }) => {
+      const fileId = getNanoid(32);
+
+      setSources([
+        {
+          id: fileId,
+          createStatus: 'waiting',
+          rawText: data.value,
+          sourceName: data.name,
+          icon: 'file/fill/manual'
+        }
+      ]);
+      goToNext();
+    },
+    [goToNext, setSources]
+  );
 
   useEffect(() => {
     const source = sources[0];
@@ -78,25 +96,7 @@ const CustomTextInput = ({ goToNext }: { goToNext: () => void }) => {
         />
       </Box>
       <Flex mt={5} justifyContent={'flex-end'}>
-        <Button
-          onClick={handleSubmit((data) => {
-            const fileId = getNanoid(32);
-
-            setSources([
-              {
-                id: fileId,
-                rawText: data.value,
-                chunks: [],
-                chunkChars: 0,
-                sourceName: data.name,
-                icon: 'file/fill/manual'
-              }
-            ]);
-            goToNext();
-          })}
-        >
-          {t('common.Next Step')}
-        </Button>
+        <Button onClick={handleSubmit((data) => onSubmit(data))}>{t('common.Next Step')}</Button>
       </Flex>
     </Box>
   );
